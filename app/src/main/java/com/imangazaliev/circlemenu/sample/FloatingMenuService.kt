@@ -150,22 +150,7 @@ class FloatingMenuService : Service() {
             }
         })
 
-        // Adjust window size when menu opens/closes so buttons no queden recortados
-        circle.onMenuOpenAnimationStart {
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT
-            windowManager.updateViewLayout(view, params)
-        }
-        circle.onMenuOpenAnimationEnd {
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT
-            windowManager.updateViewLayout(view, params)
-        }
-        circle.onMenuCloseAnimationEnd {
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT
-            windowManager.updateViewLayout(view, params)
-        }
+        // Mantén la ventana ligera; no forces updates durante la animación para preservar fluidez
 
         // Evita duplicados si por alguna razón quedó un overlay previo
         try {

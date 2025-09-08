@@ -13,9 +13,9 @@
         android:layout_gravity="center"
         app:buttonColors="@array/simple_menu_colors"
         app:buttonIcons="@array/simple_menu_icons"
-        app:distance="120dp"
-        app:maxAngle="180"
-        app:startAngle="-180" />
+        app:distance="100dp"
+        app:maxAngle="360"
+        app:startAngle="270" />
 
     <!-- El botón central del CircleMenu abre/cierra el menú -->
 

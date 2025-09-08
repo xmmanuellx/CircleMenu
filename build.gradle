@@ -24,6 +24,9 @@ task clean(type: Delete) {
 
 // On Windows, antivirus/indexers can lock build outputs. Relocate outputs to a
 // dedicated folder to avoid stale locks on default paths.
+// Allow per-build output directory suffix to avoid Windows file locks on previous outputs.
+def buildSuffix = System.getProperty('buildSuffix') ?: System.getenv('BUILD_SUFFIX')
 subprojects { proj ->
-    proj.buildDir = file("${rootDir}/.build/${proj.name}")
+    def baseDir = "${rootDir}/.build/${proj.name}"
+    proj.buildDir = file(buildSuffix ? "${baseDir}-${buildSuffix}" : baseDir)
 }
