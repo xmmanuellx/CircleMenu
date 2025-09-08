@@ -90,20 +90,18 @@ class FloatingMenuService : Service() {
                 or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN)
 
-        val density = resources.displayMetrics.density
-        val overlaySizePx = (400 * density).toInt()
         val params = WindowManager.LayoutParams(
-            overlaySizePx,
-            overlaySizePx,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             flags,
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP or Gravity.START
-        params.x = (20 * density).toInt()
-        params.y = (200 * density).toInt()
+        params.x = (20 * resources.displayMetrics.density).toInt()
+        params.y = (200 * resources.displayMetrics.density).toInt()
 
-        val circle = view.findViewById<View>(R.id.floatingMenu)
+        val circle = view.findViewById<com.imangazaliev.circlemenu.CircleMenu>(R.id.floatingMenu)
 
         // Arrastre moviendo toda la ventana (no los márgenes internos)
         view.setOnTouchListener(null)
@@ -143,12 +141,31 @@ class FloatingMenuService : Service() {
                         if (!dragging) {
                             v.performClick()
                         }
+                        // Ensure window recomputes size if content changed
+                        windowManager.updateViewLayout(view, params)
                         return true
                     }
                 }
                 return false
             }
         })
+
+        // Adjust window size when menu opens/closes so buttons no queden recortados
+        circle.onMenuOpenAnimationStart {
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            windowManager.updateViewLayout(view, params)
+        }
+        circle.onMenuOpenAnimationEnd {
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            windowManager.updateViewLayout(view, params)
+        }
+        circle.onMenuCloseAnimationEnd {
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
+            windowManager.updateViewLayout(view, params)
+        }
 
         // Evita duplicados si por alguna razón quedó un overlay previo
         try {
