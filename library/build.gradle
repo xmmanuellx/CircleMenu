@@ -1,52 +1,44 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'kotlin-android'
 
 final LIBRARY_VERSION_NAME = '3.0.0'
 final LIBRARY_VERSION_CODE = 10
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.3"
+    namespace 'com.imangazaliev.circlemenu'
+    compileSdkVersion 34
 
     defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 29
-        versionCode LIBRARY_VERSION_CODE
-        versionName LIBRARY_VERSION_NAME
+        minSdkVersion 21
+        targetSdkVersion 34
 
         vectorDrawables.useSupportLibrary = true
     }
 
-    aaptOptions {
-        additionalParameters "--no-version-vectors"
-    }
-
-    lintOptions {
+    lint {
         abortOnError false
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
     }
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.google.android.material:material:1.2.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
 }
 
-// это блок будет обработан плагином bintray-release
-publish {
-    userOrg = 'imangazaliev'
-    groupId = 'com.github.imangazalievm'
-    artifactId = 'circlemenu'
-    publishVersion = LIBRARY_VERSION_NAME
-    desc = 'CircleMenu is a simple, elegant menu with a circular layout'
-    licences = ['MIT']
-    website = 'https://github.com/ImangazalievM/CircleMenu'
-}
+// Publishing via Novoda Bintray plugin removed as Bintray is sunset.

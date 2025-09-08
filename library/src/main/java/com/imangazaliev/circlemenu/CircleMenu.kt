@@ -85,6 +85,10 @@ class CircleMenu @JvmOverloads constructor(
 
             initMenuButton(menuIconType, centerButtonColor, centerButtonIconColor)
             initMenuLayout()
+            // Asegura que el botón lanzador no duplique visualmente al centro del menú
+            onMenuCloseAnimationEnd {
+                this@CircleMenu.visibility = View.VISIBLE
+            }
         }.recycle()
     }
 
@@ -105,9 +109,14 @@ class CircleMenu @JvmOverloads constructor(
     }
 
     private fun initMenuLayout() {
-        val activity = context as Activity
-        val decor = activity.window.decorView as ViewGroup
         val menuButton = this
+        // Resolve a container ViewGroup to host the menu layout.
+        // Prefer the window root view; fallback to the direct parent.
+        val containerResolver: () -> ViewGroup? = {
+            // Si rootView no es un ViewGroup, usa el padre directo.
+            (menuButton.rootView as? ViewGroup)
+                ?: (menuButton.parent as? ViewGroup)
+        }
 
         onLaidOut {
             val menuButtonLocation = IntArray(2).let {
@@ -120,28 +129,72 @@ class CircleMenu @JvmOverloads constructor(
                     menuButtonLocation.y + menuButton.height
             )
 
+            val container = containerResolver() ?: return@onLaidOut
             val parentLocation = IntArray(2).let {
-                decor.getLocationOnScreen(it)
+                container.getLocationOnScreen(it)
                 Point(it.first(), it.last())
             }
             bounds.offset(-parentLocation.x, -parentLocation.y)
 
-            val menuLayoutParams = FrameLayout.LayoutParams(
+            // Asegura que el contenedor no recorte (si es posible)
+            container.clipChildren = false
+
+            // Añade solo si aún no tiene padre o si es otro contenedor
+            if (menuLayout.parent != container) {
+                (menuLayout.parent as? ViewGroup)?.removeView(menuLayout)
+                val menuLayoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
-            )
-            decor.addView(menuLayout, menuLayoutParams)
+                )
+                container.addView(menuLayout, menuLayoutParams)
+            }
+
             menuLayout.post {
                 val width = menuLayout.width
                 val height = menuLayout.height
-                decor.removeView(menuLayout)
-                val params = FrameLayout.LayoutParams(
-                        width,
-                        height
-                )
+                val params = (menuLayout.layoutParams as? FrameLayout.LayoutParams)
+                    ?: FrameLayout.LayoutParams(width, height)
+                params.width = width
+                params.height = height
                 params.leftMargin = bounds.centerX() - (menuLayout.width / 2)
                 params.topMargin = bounds.centerY() - (menuLayout.height / 2)
-                decor.addView(menuLayout, params)
+                menuLayout.layoutParams = params
+            }
+        }
+
+        // Reposiciona el layout del menú cuando cambie la posición del botón (p.ej. arrastre)
+        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            val container = (rootView as? ViewGroup) ?: (parent as? ViewGroup) ?: return@addOnLayoutChangeListener
+            container.clipChildren = false
+            val btnLoc = IntArray(2).also { getLocationOnScreen(it) }
+            val parentLoc = IntArray(2).also { container.getLocationOnScreen(it) }
+            val bounds = Rect(
+                btnLoc[0],
+                btnLoc[1],
+                btnLoc[0] + width,
+                btnLoc[1] + height
+            )
+            bounds.offset(-parentLoc[0], -parentLoc[1])
+
+            // Asegura que el menú esté añadido al contenedor
+            if (menuLayout.parent != container) {
+                (menuLayout.parent as? ViewGroup)?.removeView(menuLayout)
+                container.addView(menuLayout, FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ))
+            }
+
+            if (menuLayout.width == 0 || menuLayout.height == 0) {
+                menuLayout.post { requestLayout() }
+            } else {
+                val lp = (menuLayout.layoutParams as? FrameLayout.LayoutParams)
+                    ?: FrameLayout.LayoutParams(menuLayout.width, menuLayout.height)
+                lp.width = menuLayout.width
+                lp.height = menuLayout.height
+                lp.leftMargin = bounds.centerX() - (menuLayout.width / 2)
+                lp.topMargin = bounds.centerY() - (menuLayout.height / 2)
+                menuLayout.layoutParams = lp
             }
         }
 
@@ -153,6 +206,8 @@ class CircleMenu @JvmOverloads constructor(
     }
 
     private fun showMenu() {
+        // Oculta el botón lanzador para no ver dos botones al mismo tiempo
+        this.visibility = View.INVISIBLE
         menuLayout.visibility = View.VISIBLE
         menuLayout.open(true)
     }
@@ -178,7 +233,27 @@ class CircleMenu @JvmOverloads constructor(
     }
 
     fun close(animate: Boolean) {
-        this.menuLayout.open(animate)
+        this.menuLayout.close(animate)
+    }
+
+    // Expuesto por si se requiere desde fuera (no usado ahora)
+    fun repositionMenuRelativeToButton() {
+        val container = (rootView as? ViewGroup) ?: (parent as? ViewGroup) ?: return
+        container.clipChildren = false
+        val btnLoc = IntArray(2).also { getLocationOnScreen(it) }
+        val parentLoc = IntArray(2).also { container.getLocationOnScreen(it) }
+        val bounds = Rect(
+            btnLoc[0],
+            btnLoc[1],
+            btnLoc[0] + width,
+            btnLoc[1] + height
+        )
+        bounds.offset(-parentLoc[0], -parentLoc[1])
+        val lp = (menuLayout.layoutParams as? FrameLayout.LayoutParams)
+            ?: FrameLayout.LayoutParams(menuLayout.width, menuLayout.height)
+        lp.leftMargin = bounds.centerX() - (menuLayout.width / 2)
+        lp.topMargin = bounds.centerY() - (menuLayout.height / 2)
+        menuLayout.layoutParams = lp
     }
 
     fun onMenuOpenAnimationStart(listener: () -> Unit) {
